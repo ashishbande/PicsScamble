@@ -1,0 +1,53 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    xmlns:card_view="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/rl"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="16dp"
+    android:background="#c2dbfd">
+    <android.support.v7.widget.RecyclerView
+        android:id="@+id/recycler_view"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:scrollbars="vertical"
+        >
+    </android.support.v7.widget.RecyclerView>
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Flip!"
+        android:id="@+id/btnFlip"
+        android:layout_below="@+id/recycler_view"
+        android:layout_centerHorizontal="true"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/timeView"
+        android:text="@string/title_text_gameView"
+        android:layout_below="@id/btnFlip"
+        android:layout_centerHorizontal="true" />
+
+    <android.support.v7.widget.CardView
+        android:id="@+id/random_card_view"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/timeView"
+        card_view:cardCornerRadius="@dimen/card_padding"
+        card_view:cardElevation="@dimen/card_padding"
+        card_view:cardMaxElevation="@dimen/card_padding"
+        card_view:contentPadding="@dimen/card_padding">
+
+        <TextView
+            android:id="@+id/random_item_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_gravity="center"
+            android:gravity="center"
+            android:padding="10dp"
+            android:textSize="20dp"
+            android:textStyle="bold" />
+    </android.support.v7.widget.CardView>
+
+</RelativeLayout>
