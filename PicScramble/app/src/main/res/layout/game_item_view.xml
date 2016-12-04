@@ -33,7 +33,8 @@
         card_view:cardElevation="@dimen/card_padding"
         card_view:cardMaxElevation="@dimen/card_padding"
         card_view:contentPadding="@dimen/card_padding"
-        android:visibility="gone">
+        android:visibility="gone"
+        >
     </android.support.v7.widget.CardView>
 
 </RelativeLayout>

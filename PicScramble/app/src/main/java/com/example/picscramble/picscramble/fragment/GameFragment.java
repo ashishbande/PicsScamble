@@ -4,15 +4,16 @@ import android.animation.AnimatorInflater;
 import android.animation.AnimatorSet;
 import android.app.ProgressDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.graphics.Rect;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.CountDownTimer;
-import android.provider.ContactsContract;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.CardView;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -20,9 +21,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
-import android.widget.Button;
 import android.widget.ImageView;
-import android.widget.MultiAutoCompleteTextView;
 import android.widget.TextView;
 
 import com.example.picscramble.picscramble.R;
@@ -36,51 +35,69 @@ import java.util.List;
 import java.util.Random;
 
 /**
- * Created by abande on 12/2/16.
+ * The fragment holds the complete rendeing a even game logic, The game login can be seperated however due to time constraints
+ * Added in fragment only.
  */
 
-public class GameFragment extends Fragment implements View.OnClickListener, AdapterView.OnItemClickListener {
-
+public class GameFragment extends Fragment implements AdapterView.OnItemClickListener {
+    // MAX No of images in a Grid
     private static final int MAX_NO_IMAGES = 9;
+    // Animator used for flip animation
+    AnimatorSet setRightOut, setLeftIn;
+    // Recylcer view related managers.
     private RecyclerView mRecyclerView;
     private GridLayoutManager mLayoutManager;
+    //Adpator holding the images view.
     private GameAdaptor mAdapter;
-
-    private Button btn_flip;
-
-    AnimatorSet setRightOut;
-
-
-    AnimatorSet setLeftIn;
+    // Model array use for managing the state of tiles.
     private ArrayList<PicModel> mPicModel = new ArrayList<>(MAX_NO_IMAGES);
-
+    // Timer for managing the initial countdown.
     private CountDownTimer timer;
+    // Remaining time view for countdowns.
     private TextView mRemainingTime;
+    // Random image view container
     private CardView mRandomView;
+    // Random Image view
     private ImageView mRandomImageView;
-
+    // Used to calculate the time taken to complete the game.
+    private long startTime;
+    // Counter used to determine the win condition.
     private byte sucessCounter = MAX_NO_IMAGES;
+    // Current random index to show random image.
+    private byte currentRandomIndex;
+
+    /**
+     * Utility Method used to identify the connectivity.
+     *
+     * @param ctx
+     * @return
+     */
+    public static boolean isOnline(Context ctx) {
+        ConnectivityManager cm = (ConnectivityManager) ctx.getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo netInfo = cm.getActiveNetworkInfo();
+        if (netInfo != null && netInfo.isConnectedOrConnecting()) {
+            return true;
+        }
+        return false;
+    }
 
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-
-
-
         setRightOut = (AnimatorSet) AnimatorInflater.loadAnimator(getActivity().getApplicationContext(),
                 R.animator.flip_right_out);
-
-
         setLeftIn = (AnimatorSet) AnimatorInflater.loadAnimator(getActivity().getApplicationContext(),
                 R.animator.flight_left_in);
-
         return inflater.inflate(R.layout.game_view, container, false);
-
     }
 
+    /**
+     * The method used to create the model object for 9 tiled images.
+     */
+
     private void preparePicModel() {
-          LoadImagesFromFlickrTask task = new LoadImagesFromFlickrTask();
-          task.execute();
+        LoadImagesFromFlickrTask task = new LoadImagesFromFlickrTask();
+        task.execute();
     }
 
     @Override
@@ -94,8 +111,6 @@ public class GameFragment extends Fragment implements View.OnClickListener, Adap
         int spacingInPixels = getResources().getDimensionPixelSize(R.dimen.tile_padding);
         mRecyclerView.addItemDecoration(new SpacesItemDecoration(spacingInPixels));
 
-        btn_flip = (Button) view.findViewById(R.id.btnFlip);
-        btn_flip.setOnClickListener(this);
 
         mRemainingTime = (TextView) view.findViewById(R.id.timeView);
 
@@ -110,16 +125,18 @@ public class GameFragment extends Fragment implements View.OnClickListener, Adap
         mRandomImageView = (ImageView) view.findViewById(R.id.random_image_view);
         mRandomView.setVisibility(View.GONE);
 
+        // Time to be added to create the initial countdown.
         timer = new CountDownTimer(15000, 1000) {
             @Override
             public void onTick(long millisUntilFinished) {
-                if(isAdded()) {
+                if (isAdded()) {
                     mRemainingTime.setText(getString(R.string.secondsRemains) + "===== " + millisUntilFinished / 1000);
                 }
             }
 
             @Override
             public void onFinish() {
+                startTime = System.currentTimeMillis();
                 flipAllViews();
                 mRemainingTime.setVisibility(View.GONE);
                 showRandomView();
@@ -128,17 +145,18 @@ public class GameFragment extends Fragment implements View.OnClickListener, Adap
 
     }
 
-    int currentRandomIndex;
-
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);
 
-        if(isOnline(context)){
+        if (isOnline(context)) {
             preparePicModel();
         }
     }
 
+    /**
+     * Show Random image view with random numbers.
+     */
     private void showRandomView() {
         mRandomView.setVisibility(View.VISIBLE);
         while (true) {
@@ -150,49 +168,42 @@ public class GameFragment extends Fragment implements View.OnClickListener, Adap
         }
     }
 
-    private int getRandomIndex() {
+    /**
+     * Give Random No between 0 to 9.
+     */
+
+    private byte getRandomIndex() {
         Random rand = new Random();
-        return rand.nextInt(9);
+        return (byte) rand.nextInt(MAX_NO_IMAGES);
     }
 
-    @Override
-    public void onClick(View v) {
-        if (v.equals(btn_flip)) {
-            flipView(3);
-        }
-    }
+    /**
+     * Function to flip All tiles.
+     */
 
     private void flipAllViews() {
-        View child;
         for (int temp = 0; temp < mRecyclerView.getChildCount(); temp++) {
-            child = mRecyclerView.getChildAt(temp);
-            if (!mPicModel.get(temp).isFlipped()) {
-                setRightOut.setTarget(child.findViewById(R.id.item_view));
-                setLeftIn.setTarget(child.findViewById(R.id.item_card_view_flipped));
-                setRightOut.start();
-                setLeftIn.start();
-                mPicModel.get(temp).setFlipped(true);
-            } else {
-                setRightOut.setTarget(child.findViewById(R.id.item_card_view_flipped));
-                setLeftIn.setTarget(child.findViewById(R.id.item_view));
-                setRightOut.start();
-                setLeftIn.start();
-                mPicModel.get(temp).setFlipped(false);
-            }
+            flipView(temp);
         }
     }
+
+    /**
+     * Flip the tile based on the provided position
+     *
+     * @param temp Position
+     */
 
     private void flipView(int temp) {
         View child = mRecyclerView.getChildAt(temp);
         if (mPicModel.get(temp).isFlipped()) {
-            setRightOut.setTarget(child.findViewById(R.id.item_view));
-            setLeftIn.setTarget(child.findViewById(R.id.item_card_view_flipped));
+            setRightOut.setTarget(child.findViewById(R.id.item_card_view_flipped));
+            setLeftIn.setTarget(child.findViewById(R.id.item_view));
             setRightOut.start();
             setLeftIn.start();
             mPicModel.get(temp).setFlipped(false);
         } else {
-            setRightOut.setTarget(child.findViewById(R.id.item_card_view_flipped));
-            setLeftIn.setTarget(child.findViewById(R.id.item_view));
+            setRightOut.setTarget(child.findViewById(R.id.item_view));
+            setLeftIn.setTarget(child.findViewById(R.id.item_card_view_flipped));
             setRightOut.start();
             setLeftIn.start();
             mPicModel.get(temp).setFlipped(true);
@@ -214,15 +225,47 @@ public class GameFragment extends Fragment implements View.OnClickListener, Adap
         }
     }
 
+    /**
+     * Just to check if the image ID is same for random and clicked image.
+     *
+     * @param position
+     * @return
+     */
+
     private boolean isSameImage(int position) {
         return mPicModel.get(currentRandomIndex).getIdimage() == mPicModel.get(position).getIdimage();
 
     }
 
+    /**
+     * Show the winning dialog.
+     */
+
     private void showWinDailog() {
-        getActivity().finishAffinity();
+        long timeDifference = System.currentTimeMillis() - startTime;
+        int time_in_sec = (int) (timeDifference / 1000);
+        showDialog(time_in_sec);
+
     }
 
+    private void showDialog(int time) {
+        AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(getActivity());
+        alertDialogBuilder.setMessage(String.format(getString(R.string.congrets), time));
+        alertDialogBuilder.setNeutralButton("Exit", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                getActivity().finishAffinity();
+            }
+        });
+
+
+        AlertDialog alertDialog = alertDialogBuilder.create();
+        alertDialog.show();
+    }
+
+    /**
+     * Decorator class for seperation between Grid views.
+     */
 
     class SpacesItemDecoration extends RecyclerView.ItemDecoration {
         private int space;
@@ -246,6 +289,10 @@ public class GameFragment extends Fragment implements View.OnClickListener, Adap
             }
         }
     }
+
+    /**
+     * Async Task implementation to fetch image URL. This can be optimised using volley.
+     */
 
     class LoadImagesFromFlickrTask extends AsyncTask<Void, Integer, List> {
         private ProgressDialog progressDialog;
@@ -273,33 +320,23 @@ public class GameFragment extends Fragment implements View.OnClickListener, Adap
         @Override
         protected void onPostExecute(List listofUrl) {
 
-            if(mPicModel != null && mPicModel.isEmpty()) {
+            if (mPicModel != null && mPicModel.isEmpty()) {
                 mPicModel.clear();
             }
-            if(!(listofUrl == null && listofUrl.isEmpty())){
-                for (int i =0; i < listofUrl.size(); i++){
+            if (!(listofUrl == null && listofUrl.isEmpty())) {
+                for (int i = 0; i < listofUrl.size(); i++) {
                     PicModel tempModel = new PicModel();
                     tempModel.setFlipped(false);
                     tempModel.setIdimage(i);
                     tempModel.setImageURL(listofUrl.get(i).toString());
                     mPicModel.add(tempModel);
-               }
+                }
             }
             mAdapter.notifyDataSetChanged();
             progressDialog.dismiss();
             timer.start();
             super.onPostExecute(listofUrl);
         }
-    }
-
-    public static boolean isOnline(Context ctx) {
-
-        ConnectivityManager cm = (ConnectivityManager) ctx.getSystemService(Context.CONNECTIVITY_SERVICE);
-        NetworkInfo netInfo = cm.getActiveNetworkInfo();
-        if (netInfo != null && netInfo.isConnectedOrConnecting()) {
-            return true;
-        }
-        return false;
     }
 
 }
