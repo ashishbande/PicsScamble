@@ -5,4 +5,6 @@
     <dimen name="gamearea_vertical_margin">16dp</dimen>
     <dimen name="card_padding">7dp</dimen>
     <dimen name="tile_padding">4dp</dimen>
+    <dimen name="card_width">80dp</dimen>
+    <dimen name="card_height">80dp</dimen>
 </resources>

@@ -10,6 +10,7 @@ import android.net.NetworkInfo;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.CountDownTimer;
+import android.provider.ContactsContract;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.CardView;
@@ -20,6 +21,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.MultiAutoCompleteTextView;
 import android.widget.TextView;
 
@@ -27,6 +29,7 @@ import com.example.picscramble.picscramble.R;
 import com.example.picscramble.picscramble.adaptor.GameAdaptor;
 import com.example.picscramble.picscramble.flickr.FlickrManager;
 import com.example.picscramble.picscramble.model.PicModel;
+import com.squareup.picasso.Picasso;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -54,7 +57,7 @@ public class GameFragment extends Fragment implements View.OnClickListener, Adap
     private CountDownTimer timer;
     private TextView mRemainingTime;
     private CardView mRandomView;
-    private TextView mRandomTextView;
+    private ImageView mRandomImageView;
 
     private byte sucessCounter = MAX_NO_IMAGES;
 
@@ -104,7 +107,7 @@ public class GameFragment extends Fragment implements View.OnClickListener, Adap
 
         //Random view for the image check
         mRandomView = (CardView) view.findViewById(R.id.random_card_view);
-        mRandomTextView = (TextView) view.findViewById(R.id.random_item_view);
+        mRandomImageView = (ImageView) view.findViewById(R.id.random_image_view);
         mRandomView.setVisibility(View.GONE);
 
         timer = new CountDownTimer(15000, 1000) {
@@ -117,11 +120,11 @@ public class GameFragment extends Fragment implements View.OnClickListener, Adap
 
             @Override
             public void onFinish() {
-//                flipAllViews();
-//                mRemainingTime.setVisibility(View.GONE);
-//                showRandomView();
+                flipAllViews();
+                mRemainingTime.setVisibility(View.GONE);
+                showRandomView();
             }
-        }.start();
+        };
 
     }
 
@@ -141,7 +144,7 @@ public class GameFragment extends Fragment implements View.OnClickListener, Adap
         while (true) {
             currentRandomIndex = getRandomIndex();
             if (mPicModel.get(currentRandomIndex).isFlipped() || sucessCounter == MAX_NO_IMAGES) {
-                mRandomTextView.setText("" + mPicModel.get(currentRandomIndex).getIdimage());
+                Picasso.with(getActivity()).load(mPicModel.get(currentRandomIndex).getImageURL()).into(mRandomImageView);
                 break;
             }
         }
@@ -269,7 +272,7 @@ public class GameFragment extends Fragment implements View.OnClickListener, Adap
 
         @Override
         protected void onPostExecute(List listofUrl) {
-            progressDialog.dismiss();
+
             if(mPicModel != null && mPicModel.isEmpty()) {
                 mPicModel.clear();
             }
@@ -283,7 +286,8 @@ public class GameFragment extends Fragment implements View.OnClickListener, Adap
                }
             }
             mAdapter.notifyDataSetChanged();
-
+            progressDialog.dismiss();
+            timer.start();
             super.onPostExecute(listofUrl);
         }
     }
